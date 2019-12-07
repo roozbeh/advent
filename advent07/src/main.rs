@@ -43,7 +43,9 @@ fn main() -> std::io::Result<()> {
         // previous output is the initial signal for this whole thing
         let mut previous_output: isize = 0;
         while !amplifiers[4].has_halted() {
-            // orderly do one loop for each amplifier
+            // orderly do one loop for each amplifier, they'll stop when they
+            // need input, but you can also stop when they produce output, it's
+            // the same thing basically.
             for amplifier in amplifiers.iter_mut() {
                 // write the output of the previous amplifier as input for the current
                 amplifier.write_input(previous_output);
@@ -122,10 +124,10 @@ impl Amplifier {
         self.state == State::Wait
     }
 
-    fn load(&self, mode: isize, param: isize) -> isize {
+    fn load(&self, mode: isize, offset: usize) -> isize {
         match mode {
-            0 => self.program[param as usize],
-            1 => param,
+            0 => self.program[self.program[self.pos + offset] as usize],
+            1 => self.program[self.pos + offset],
             _ => {
                 println!("Error, unexpected mode: {:?}", mode);
                 0
@@ -134,20 +136,16 @@ impl Amplifier {
     }
 
     fn add(&mut self, params_mode: Vec<isize>) {
-        let a = self.program[self.pos + 1];
-        let b = self.program[self.pos + 2];
+        let first_param = self.load(params_mode[0], 1);
+        let second_param = self.load(params_mode[1], 2);
         let store_pos = self.program[self.pos + 3] as usize;
-        let first_param = self.load(params_mode[0], a);
-        let second_param = self.load(params_mode[1], b);
         self.program[store_pos] = first_param + second_param;
     }
 
     fn mul(&mut self, params_mode: Vec<isize>) {
-        let a = self.program[self.pos + 1];
-        let b = self.program[self.pos + 2];
+        let first_param = self.load(params_mode[0], 1);
+        let second_param = self.load(params_mode[1], 2);
         let store_pos = self.program[self.pos + 3] as usize;
-        let first_param = self.load(params_mode[0], a);
-        let second_param = self.load(params_mode[1], b);
         self.program[store_pos] = first_param * second_param;
     }
 
@@ -163,17 +161,14 @@ impl Amplifier {
     }
 
     fn output(&mut self, params_mode: Vec<isize>) {
-        let a = self.program[self.pos + 1];
-        let out = self.load(params_mode[0], a);
+        let out = self.load(params_mode[0], 1);
         self.outputs.push_back(out)
     }
 
     fn jump_if_true(&mut self, params_mode: Vec<isize>) -> bool {
-        let a = self.program[self.pos + 1];
-        let first_param = self.load(params_mode[0], a);
+        let first_param = self.load(params_mode[0], 1);
         if first_param != 0 {
-            let b = self.program[self.pos + 2];
-            let second_param = self.load(params_mode[1], b);
+            let second_param = self.load(params_mode[1], 2);
             self.pos = second_param as usize;
             true
         } else {
@@ -182,11 +177,9 @@ impl Amplifier {
     }
 
     fn jump_if_false(&mut self, params_mode: Vec<isize>) -> bool {
-        let a = self.program[self.pos + 1];
-        let first_param = self.load(params_mode[0], a);
+        let first_param = self.load(params_mode[0], 1);
         if first_param == 0 {
-            let b = self.program[self.pos + 2];
-            let second_param = self.load(params_mode[1], b);
+            let second_param = self.load(params_mode[1], 2);
             self.pos = second_param as usize;
             true
         } else {
@@ -195,11 +188,9 @@ impl Amplifier {
     }
 
     fn lt(&mut self, params_mode: Vec<isize>) {
-        let a = self.program[self.pos + 1];
-        let b = self.program[self.pos + 2];
+        let first_param = self.load(params_mode[0], 1);
+        let second_param = self.load(params_mode[1], 2);
         let store_pos = self.program[self.pos + 3] as usize;
-        let first_param = self.load(params_mode[0], a);
-        let second_param = self.load(params_mode[1], b);
         if first_param < second_param {
             self.program[store_pos] = 1
         } else {
@@ -208,11 +199,9 @@ impl Amplifier {
     }
 
     fn eq(&mut self, params_mode: Vec<isize>) {
-        let a = self.program[self.pos + 1];
-        let b = self.program[self.pos + 2];
+        let first_param = self.load(params_mode[0], 1);
+        let second_param = self.load(params_mode[1], 2);
         let store_pos = self.program[self.pos + 3] as usize;
-        let first_param = self.load(params_mode[0], a);
-        let second_param = self.load(params_mode[1], b);
         if first_param == second_param {
             self.program[store_pos] = 1
         } else {
