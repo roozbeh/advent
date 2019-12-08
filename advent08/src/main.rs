@@ -8,6 +8,37 @@ fn get_layer(data: &[u8], layer_num: usize, layer_size: usize) -> &[u8] {
     &data[base..base + layer_size]
 }
 
+fn part1(contents: &String, width: usize, height: usize) {
+    //let data: Vec<u8> = contents.trim().bytes().map(|digit| digit - 48).collect();
+    //let layers_number = data.len() / (width * height);
+
+    // part 1
+    // let mut min_zero_idx: usize = 0;
+    // let mut min_zero_count: usize = usize::max_value();
+    // for layer_idx in 0..layers_number {
+    //     let layer = get_layer(&data, layer_idx, width * height);
+    //     let zero_count = layer.iter().filter(|&&x| x == 0).count();
+    //     if zero_count < min_zero_count {
+    //         min_zero_count = zero_count;
+    //         min_zero_idx = layer_idx;
+    //     }
+    // }
+    // let smallest = get_layer(&data, min_zero_idx, width * height);
+    let smallest: Vec<u8> = contents
+        .trim()
+        .bytes()
+        .map(|digit| digit - 48)
+        .chunks(width * height)
+        .into_iter()
+        .map(|x| x.collect::<Vec<u8>>())
+        .min_by_key(|x| x.iter().filter(|&&c| c == 0).count())
+        .unwrap();
+    println!(
+        "checksum {:?}",
+        smallest.iter().filter(|&&x| x == 1).count() * smallest.iter().filter(|&&x| x == 2).count()
+    );
+}
+
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
@@ -18,34 +49,12 @@ fn main() -> std::io::Result<()> {
     let width = args[2].parse::<usize>().unwrap();
     let height = args[3].parse::<usize>().unwrap();
 
-    // To make sure the image wasn't corrupted during transmission, the Elves
-    // would like you to find the layer that contains the fewest 0 digits. On
-    // that layer, what is the number of 1 digits multiplied by the number of 2
-    // digits?
-
-    let data: Vec<u8> = contents.trim().bytes().map(|digit| digit - 48).collect();
-
-    let layers_number = data.len() / (width * height);
-
-    let mut min_zero_idx: usize = 0;
-    let mut min_zero_count: usize = usize::max_value();
-    for layer_idx in 0..layers_number {
-        let layer = get_layer(&data, layer_idx, width * height);
-        let zero_count = layer.iter().filter(|&&x| x == 0).count();
-        if zero_count < min_zero_count {
-            min_zero_count = zero_count;
-            min_zero_idx = layer_idx;
-        }
-    }
-
-    // part 1
-    let smallest = get_layer(&data, min_zero_idx, width * height);
-    println!(
-        "checksum {:?}",
-        smallest.iter().filter(|&&x| x == 1).count() * smallest.iter().filter(|&&x| x == 2).count()
-    );
+    part1(&contents, width, height);
 
     // part 2
+    let data: Vec<u8> = contents.trim().bytes().map(|digit| digit - 48).collect();
+    let layers_number = data.len() / (width * height);
+
     let mut final_image = vec![""; width * height];
     for layer_idx in 0..layers_number {
         let current_layer = get_layer(&data, layer_idx, width * height);
