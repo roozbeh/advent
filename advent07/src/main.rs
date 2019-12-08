@@ -140,6 +140,7 @@ impl Amplifier {
         let second_param = self.load(params_mode[1], 2);
         let store_pos = self.program[self.pos + 3] as usize;
         self.program[store_pos] = first_param + second_param;
+        self.pos += 4;
     }
 
     fn mul(&mut self, params_mode: Vec<isize>) {
@@ -147,43 +148,43 @@ impl Amplifier {
         let second_param = self.load(params_mode[1], 2);
         let store_pos = self.program[self.pos + 3] as usize;
         self.program[store_pos] = first_param * second_param;
+        self.pos += 4;
     }
 
-    fn input(&mut self) -> State {
+    fn input(&mut self) {
         let store_pos = self.program[self.pos + 1] as usize;
         match self.read_input() {
-            None => State::Wait,
+            None => self.state = State::Wait,
             Some(value) => {
                 self.program[store_pos] = value;
-                State::Run
+                self.pos += 2;
             }
         }
     }
 
     fn output(&mut self, params_mode: Vec<isize>) {
         let out = self.load(params_mode[0], 1);
-        self.outputs.push_back(out)
+        self.outputs.push_back(out);
+        self.pos += 2;
     }
 
-    fn jump_if_true(&mut self, params_mode: Vec<isize>) -> bool {
+    fn jump_if_true(&mut self, params_mode: Vec<isize>) {
         let first_param = self.load(params_mode[0], 1);
         if first_param != 0 {
             let second_param = self.load(params_mode[1], 2);
             self.pos = second_param as usize;
-            true
         } else {
-            false
+            self.pos += 3;
         }
     }
 
-    fn jump_if_false(&mut self, params_mode: Vec<isize>) -> bool {
+    fn jump_if_false(&mut self, params_mode: Vec<isize>) {
         let first_param = self.load(params_mode[0], 1);
         if first_param == 0 {
             let second_param = self.load(params_mode[1], 2);
             self.pos = second_param as usize;
-            true
         } else {
-            false
+            self.pos += 3;
         }
     }
 
@@ -196,6 +197,7 @@ impl Amplifier {
         } else {
             self.program[store_pos] = 0
         }
+        self.pos += 4
     }
 
     fn eq(&mut self, params_mode: Vec<isize>) {
@@ -207,6 +209,7 @@ impl Amplifier {
         } else {
             self.program[store_pos] = 0
         }
+        self.pos += 4
     }
 
     fn run(&mut self) {
@@ -229,46 +232,15 @@ impl Amplifier {
         let opcode = self.program[self.pos] % 100;
         let params_mode = parse_mode(self.program[self.pos] / 100);
         match opcode {
-            1 => {
-                self.add(params_mode);
-                self.pos += 4
-            }
-            2 => {
-                self.mul(params_mode);
-                self.pos += 4
-            }
-            3 => {
-                self.state = self.input();
-                if self.state == State::Run {
-                    self.pos += 2
-                }
-            }
-            4 => {
-                self.output(params_mode);
-                self.pos += 2
-            }
-            5 => {
-                if !self.jump_if_true(params_mode) {
-                    self.pos += 3
-                }
-            }
-            6 => {
-                if !self.jump_if_false(params_mode) {
-                    self.pos += 3
-                }
-            }
-            7 => {
-                self.lt(params_mode);
-                self.pos += 4
-            }
-            8 => {
-                self.eq(params_mode);
-                self.pos += 4
-            }
-
-            99 => {
-                self.state = State::Halt;
-            }
+            1 => self.add(params_mode),
+            2 => self.mul(params_mode),
+            3 => self.input(),
+            4 => self.output(params_mode),
+            5 => self.jump_if_true(params_mode),
+            6 => self.jump_if_false(params_mode),
+            7 => self.lt(params_mode),
+            8 => self.eq(params_mode),
+            99 => self.state = State::Halt,
             v => {
                 println!("Error, unexpected opcode: {:?}", v);
                 self.state = State::Error;
