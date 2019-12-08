@@ -1,25 +1,39 @@
 use std::env;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::prelude::*;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
-    let file = File::open(&args[1])?;
-    let reader = BufReader::new(file);
+    let mut file = File::open(&args[1])?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
 
-    let mut weights: Vec<u32> = Vec::new();
+    let weights: Vec<isize> = contents
+        .trim()
+        .lines()
+        .map(|x| x.parse::<isize>().unwrap())
+        .collect();
 
-    for line in reader.lines() {
-        let line = line?;
-        if line == "" {
-            continue;
-        }
-        let weight: u32 = line.parse().unwrap();
-        weights.push(weight);
-    }
+    // part 1
+    println!("{}", weights.iter().map(|x| (x / 3) - 2).sum::<isize>());
 
-    println!("{}", weights.into_iter().map(|x| (x / 3) - 2).sum::<u32>(),);
+    // part 2
+    println!(
+        "{}",
+        weights
+            .iter()
+            .map(|&x| fuel_for_module(0, x))
+            .sum::<isize>()
+    );
 
     Ok(())
+}
+
+fn fuel_for_module(total: isize, mass: isize) -> isize {
+    let fuel: isize = mass / 3 - 2;
+    if fuel <= 0 {
+        return total;
+    }
+    return fuel_for_module(total + fuel, fuel);
 }
