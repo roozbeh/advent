@@ -1,4 +1,4 @@
-// use itertools::*;
+use itertools::*;
 
 fn get_layer(data: &[u8], layer_num: usize, layer_size: usize) -> &[u8] {
     let base = layer_num * layer_size;
@@ -6,7 +6,7 @@ fn get_layer(data: &[u8], layer_num: usize, layer_size: usize) -> &[u8] {
 }
 
 pub fn part1(input: &str, width: usize, height: usize) -> std::io::Result<usize> {
-    let data: Vec<u8> = input.trim().bytes().map(|digit| digit - 48).collect();
+    let data: Vec<u8> = input.trim().bytes().map(|digit| digit - b'0').collect();
     let layers_number = data.len() / (width * height);
 
     let mut min_zero_idx: usize = 0;
@@ -25,17 +25,17 @@ pub fn part1(input: &str, width: usize, height: usize) -> std::io::Result<usize>
     // p1_me              time:   [117.04 us 119.04 us 121.15 us]
     //                    change: [+2422.8% +2505.4% +2586.4%] (p = 0.00 < 0.05)
     // it's way worse than the optimal above.
-    // let smallest: Vec<u8> = input
+    // let smallest: itertools::Chunk<_> = input
     //     .trim()
     //     .bytes()
-    //     .map(|digit| digit - 48)
+    //     .map(|digit| digit - b'0')
     //     .chunks(width * height)
-    //     .into_iter()
-    //     .map(|x| x.collect::<Vec<u8>>())
-    //     .min_by_key(|x| x.iter().filter(|&&c| c == 0).count())
+    //     //.into_iter()
+    //     //.map(|x| x.collect::<Vec<u8>>())
+    //     .min_by_key(|x| x.filter(|&c| c == 0).count())
     //     .unwrap();
-    let result =
-        smallest.iter().filter(|&&x| x == 1).count() * smallest.iter().filter(|&&x| x == 2).count();
+    let result = smallest.into_iter().filter(|&x| x == 1).count()
+        * smallest.into_iter().filter(|&x| x == 2).count();
     Ok(result)
 }
 
