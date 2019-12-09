@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 
 #[derive(Eq, PartialEq, Debug)]
 enum State {
@@ -11,17 +11,16 @@ enum State {
 #[derive(Debug)]
 pub struct Computer {
     pos: usize,
-    rel_base: i128,
-    program: Vec<i128>,
+    rel_base: isize,
+    program: Vec<isize>,
 
     state: State,
-    inputs: VecDeque<i128>,
-    outputs: VecDeque<i128>,
-    extra_mem: HashMap<usize, i128>,
+    inputs: VecDeque<isize>,
+    outputs: VecDeque<isize>,
 }
 
 impl Computer {
-    pub fn new(program: Vec<i128>) -> Computer {
+    pub fn new(program: Vec<isize>) -> Computer {
         Computer {
             pos: 0,
             rel_base: 0,
@@ -29,7 +28,6 @@ impl Computer {
             state: State::Run,
             inputs: VecDeque::new(),
             outputs: VecDeque::new(),
-            extra_mem: HashMap::new(),
         }
     }
 
@@ -38,17 +36,21 @@ impl Computer {
             program
                 .trim()
                 .split(",")
-                .map(|x| x.parse::<i128>().unwrap())
+                .map(|x| x.parse::<isize>().unwrap())
                 .collect(),
         )
     }
 
-    pub fn write_input(&mut self, input: i128) {
+    pub fn write_input(&mut self, input: isize) {
         self.inputs.push_back(input);
     }
 
-    pub fn pop_output(&mut self) -> Option<i128> {
+    pub fn pop_output(&mut self) -> Option<isize> {
         self.outputs.pop_front()
+    }
+
+    pub fn get_output(&mut self) -> &VecDeque<isize> {
+        &self.outputs
     }
 
     pub fn has_halted(&self) -> bool {
@@ -76,9 +78,7 @@ impl Computer {
     }
 
     fn one_op(&mut self) {
-        println!("------");
         let op = self.read_mem(self.pos);
-        println!("rel_base: {:?}, op: {}", self.rel_base, op);
         let opcode = op % 100;
         let params_mode = parse_mode(op / 100);
         match opcode {
@@ -99,24 +99,21 @@ impl Computer {
         }
     }
 
-    fn read_mem(&mut self, offset: usize) -> i128 {
-        if offset > self.program.len() {
-            let entry = self.extra_mem.entry(offset).or_insert(0);
-            return *entry;
+    fn read_mem(&mut self, offset: usize) -> isize {
+        if offset + 1 > self.program.len() {
+            self.program.resize(offset + 1, 0);
         }
         self.program[offset]
     }
 
-    fn store_mem(&mut self, offset: usize, value: i128) {
-        if offset > self.program.len() {
-            let entry = self.extra_mem.entry(offset).or_insert(0);
-            *entry = value;
-            return;
+    fn store_mem(&mut self, offset: usize, value: isize) {
+        if offset + 1 > self.program.len() {
+            self.program.resize(offset + 1, 0);
         }
         self.program[offset] = value;
     }
 
-    fn load(&mut self, mode: isize, offset: usize) -> i128 {
+    fn load(&mut self, mode: isize, offset: usize) -> isize {
         match mode {
             0 => {
                 let rel_position = self.read_mem(self.pos + offset);
@@ -125,16 +122,7 @@ impl Computer {
             1 => self.read_mem(self.pos + offset),
             2 => {
                 let rel_offset = self.read_mem(self.pos + offset);
-                let v = self.read_mem((self.rel_base + rel_offset) as usize);
-                println!(
-                    "pos {} offset {} rel_offset {} final_offset {} value {}",
-                    self.pos,
-                    offset,
-                    rel_offset,
-                    rel_offset + self.rel_base,
-                    v
-                );
-                v
+                self.read_mem((self.rel_base + rel_offset) as usize)
             }
             _ => {
                 println!("Error, unexpected read mode: {:?}", mode);
@@ -143,18 +131,15 @@ impl Computer {
         }
     }
 
-    fn store(&mut self, mode: isize, offset: usize, value: i128) {
+    fn store(&mut self, mode: isize, offset: usize, value: isize) {
         match mode {
             0 => {
                 let store_pos = self.read_mem(self.pos + offset) as usize;
                 self.store_mem(store_pos, value);
-                //let rel_position = self.read_mem(() as usize);
-                //self.store_mem(self.pos as i128 + offset, value);
             }
             2 => {
                 let relative_movement = self.read_mem(self.pos + offset);
-                let rel_position = (self.rel_base + relative_movement) as usize;
-                self.store_mem(rel_position, value);
+                self.store_mem((self.rel_base + relative_movement) as usize, value);
             }
             _ => {
                 println!("Error, unexpected store mode: {:?}", mode);
@@ -183,7 +168,6 @@ impl Computer {
     }
 
     fn input(&mut self, params_mode: Vec<isize>) {
-        println!("input mode {:?}", params_mode);
         match self.read_input() {
             None => self.state = State::Wait,
             Some(value) => {
@@ -193,14 +177,13 @@ impl Computer {
         }
     }
 
-    fn read_input(&mut self) -> Option<i128> {
+    fn read_input(&mut self) -> Option<isize> {
         self.inputs.pop_front()
     }
 
     fn output(&mut self, params_mode: Vec<isize>) {
         let out = self.load(params_mode[0], 1);
         self.outputs.push_back(out);
-        println!("out {}", out);
         self.pos += 2;
     }
 
@@ -247,20 +230,10 @@ impl Computer {
     }
 }
 
-fn parse_mode(mode: i128) -> Vec<isize> {
+fn parse_mode(mode: isize) -> Vec<isize> {
     let mut v = Vec::new();
     v.push((mode % 10) as isize);
     v.push((mode / 10 % 10) as isize);
     v.push((mode / 100 % 10) as isize);
     v
 }
-
-// let first_param = self.load(params_mode[0], 1);
-// let second_param = self.load(params_mode[1], 2);
-// let store_pos = self.read_mem(self.pos + 3) as i128;
-// if first_param == second_param {
-//     self.store(params_mode[2], store_pos, 1);
-// } else {
-//     self.store(params_mode[2], store_pos, 0);
-// }
-// self.pos += 4
