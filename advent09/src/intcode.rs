@@ -100,51 +100,44 @@ impl Computer {
     }
 
     fn read_mem(&mut self, offset: usize) -> isize {
-        if offset + 1 > self.program.len() {
-            self.program.resize(offset + 1, 0);
-        }
+        self.resize_if_needed(offset);
         self.program[offset]
     }
 
     fn store_mem(&mut self, offset: usize, value: isize) {
-        if offset + 1 > self.program.len() {
-            self.program.resize(offset + 1, 0);
-        }
+        self.resize_if_needed(offset);
         self.program[offset] = value;
     }
 
-    fn load(&mut self, mode: isize, offset: usize) -> isize {
+    fn resize_if_needed(&mut self, offset: usize) {
+        if offset >= self.program.len() {
+            self.program.resize(offset + 1, 0);
+        }
+    }
+
+    fn pointer_offset(&mut self, mode: isize, offset: usize) -> usize {
         match mode {
-            0 => {
-                let rel_position = self.read_mem(self.pos + offset);
-                self.read_mem(rel_position as usize)
-            }
-            1 => self.read_mem(self.pos + offset),
+            0 => self.read_mem(self.pos + offset) as usize,
+            1 => self.pos + offset,
             2 => {
                 let rel_offset = self.read_mem(self.pos + offset);
-                self.read_mem((self.rel_base + rel_offset) as usize)
+                (self.rel_base + rel_offset) as usize
             }
             _ => {
-                println!("Error, unexpected read mode: {:?}", mode);
+                println!("Error, unexpected offset mode: {}", mode);
                 0
             }
         }
     }
 
+    fn load(&mut self, mode: isize, offset: usize) -> isize {
+        let load_pos = self.pointer_offset(mode, offset);
+        self.read_mem(load_pos)
+    }
+
     fn store(&mut self, mode: isize, offset: usize, value: isize) {
-        match mode {
-            0 => {
-                let store_pos = self.read_mem(self.pos + offset) as usize;
-                self.store_mem(store_pos, value);
-            }
-            2 => {
-                let relative_movement = self.read_mem(self.pos + offset);
-                self.store_mem((self.rel_base + relative_movement) as usize, value);
-            }
-            _ => {
-                println!("Error, unexpected store mode: {:?}", mode);
-            }
-        }
+        let store_pos = self.pointer_offset(mode, offset);
+        self.store_mem(store_pos, value);
     }
 
     fn adjust_rel_base(&mut self, params_mode: Vec<isize>) {
@@ -232,8 +225,8 @@ impl Computer {
 
 fn parse_mode(mode: isize) -> Vec<isize> {
     let mut v = Vec::new();
-    v.push((mode % 10) as isize);
-    v.push((mode / 10 % 10) as isize);
-    v.push((mode / 100 % 10) as isize);
+    v.push(mode % 10);
+    v.push(mode / 10 % 10);
+    v.push(mode / 100 % 10);
     v
 }
