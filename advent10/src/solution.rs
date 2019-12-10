@@ -1,8 +1,7 @@
 use num::range_step;
 use num::Integer;
-use std::fmt::Display;
 
-pub fn part1(input: &str) -> impl Display {
+pub fn part1(input: &str) -> (usize, (usize, usize)) {
     let grid = input
         .lines()
         .map(|l| l.trim().chars().collect::<Vec<char>>())
@@ -13,7 +12,8 @@ pub fn part1(input: &str) -> impl Display {
             if *loc == '.' {
                 continue;
             } else {
-                view_grid[i][j] = count_from(&grid, i, j);
+                let asteroids_seen = count_from(&grid, i, j);
+                view_grid[i][j] = asteroids_seen.len();
             }
         }
     }
@@ -28,13 +28,11 @@ pub fn part1(input: &str) -> impl Display {
             }
         }
     }
-
-    println!("{:?} {:?}", coords, highest);
-    0
+    (highest, coords)
 }
 
-fn count_from(grid: &Vec<Vec<char>>, from_i: usize, from_j: usize) -> usize {
-    let mut total_seen: usize = 0;
+fn count_from(grid: &Vec<Vec<char>>, from_i: usize, from_j: usize) -> Vec<(usize, usize)> {
+    let mut total_seen: Vec<(usize, usize)> = Vec::new();
     for (to_i, row) in grid.iter().enumerate() {
         for (to_j, loc) in row.iter().enumerate() {
             if *loc == '.' {
@@ -51,7 +49,7 @@ fn count_from(grid: &Vec<Vec<char>>, from_i: usize, from_j: usize) -> usize {
                 to_i as isize,
                 to_j as isize,
             ) {
-                total_seen += 1
+                total_seen.push((to_i, to_j));
             }
         }
     }
@@ -108,14 +106,40 @@ fn can_see(grid: &Vec<Vec<char>>, from_i: isize, from_j: isize, to_i: isize, to_
     true
 }
 
-pub fn part2(input: &str) -> impl Display {
-    // repeat
-    // get all visible from (19, 22)
-    // sort by angle
-    //     angle    is let i_diff = to_i - from_i;
-    //                 let j_diff = to_j - from_j;
-    //                 let pendenza = i_diff / j_diff;
+pub fn part2(input: &str) -> impl std::fmt::Debug {
+    let mut grid = input
+        .lines()
+        .map(|l| l.trim().chars().collect::<Vec<char>>())
+        .collect::<Vec<Vec<char>>>();
 
-    // remove in order, count to 200, return it
-    0
+    let (_, from): (usize, (usize, usize)) = part1(input);
+    let mut removed: Vec<(usize, usize)> = Vec::new();
+    loop {
+        let mut visible_ones = count_from(&grid, from.0, from.1);
+        if visible_ones.len() == 0 {
+            break;
+        }
+        visible_ones.sort_by(|a, b| {
+            let slope_a = slope(from, *a);
+            let slope_b = slope(from, *b);
+            slope_a.partial_cmp(&slope_b).unwrap()
+        });
+        for o in visible_ones {
+            removed.push(o);
+            grid[o.0][o.1] = '.';
+        }
+    }
+    let number_bet = removed[199];
+    number_bet.1 * 100 + number_bet.0
+}
+
+fn slope(from: (usize, usize), to: (usize, usize)) -> f64 {
+    let i_diff = to.0 as isize - from.0 as isize;
+    let j_diff = to.1 as isize - from.1 as isize;
+
+    let angle = (j_diff as f64).atan2(-i_diff as f64).to_degrees();
+    if angle < 0.0 {
+        return 360.0 + angle;
+    }
+    angle
 }

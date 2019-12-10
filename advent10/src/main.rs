@@ -11,6 +11,6 @@ fn main() {
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
 
-    println!("part 1: {}", solution::part1(&contents));
-    println!("part 2: {}", solution::part2(&contents));
+    println!("part 1: {:?}", solution::part1(&contents));
+    println!("part 2: {:?}", solution::part2(&contents));
 }
