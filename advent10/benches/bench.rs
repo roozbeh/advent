@@ -1,5 +1,4 @@
 #![feature(test)]
-
 include!("../src/solution.rs");
 
 extern crate test;
