@@ -109,12 +109,13 @@ fn can_see(grid: &Vec<Vec<char>>, from_i: isize, from_j: isize, to_i: isize, to_
 }
 
 pub fn part2(input: &str) -> impl Display {
-    // take all locations with an asteroid and get their coords
-    // order by pendenza from (19, 22) and by distance from point from closer to farther
-    //     pendenza is let i_diff = to_i - from_i;
+    // repeat
+    // get all visible from (19, 22)
+    // sort by angle
+    //     angle    is let i_diff = to_i - from_i;
     //                 let j_diff = to_j - from_j;
     //                 let pendenza = i_diff / j_diff;
 
-    // take 200th
+    // remove in order, count to 200, return it
     0
 }
