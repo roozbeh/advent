@@ -73,31 +73,22 @@ pub fn part2(input: &str) -> usize {
     for line in input.lines() {
         moons.push(parse(line.trim()));
     }
-    let moons_number = moons.len();
 
-    let mut moon_cycles = vec![];
-    for cycle_moon in 0..moons_number {
-        let mut axes_cycles = vec![];
-        for axes in 0..3 {
-            axes_cycles.push(find_cycle_in_axis(cycle_moon, &mut moons.clone(), axes));
-        }
-        println!("{:?}", axes_cycles);
-        moon_cycles.push(axes_cycles[2].lcm(&axes_cycles[0].lcm(&axes_cycles[1])));
+    let mut axes_cycles = vec![];
+    for axes in 0..3 {
+        axes_cycles.push(find_cycle_in_axis(&mut moons.clone(), axes));
     }
-    println!("{:?}", moon_cycles);
-    moon_cycles[2].lcm(&moon_cycles[1].lcm(&moon_cycles[0]))
+    println!("{:?}", axes_cycles);
+    axes_cycles[2].lcm(&axes_cycles[0].lcm(&axes_cycles[1]))
+    //moon_cycles.push(lcm(lcm(axes_cycles[0], axes_cycles[1]), axes_cycles[2]))
 }
 
-fn find_cycle_in_axis(
-    cycle_moon: usize,
-    moons: &mut Vec<(Vec<isize>, Vec<isize>)>,
-    axes: usize,
-) -> usize {
-    let initial = (moons[cycle_moon].0[axes], moons[cycle_moon].1[axes]);
+fn find_cycle_in_axis(moons: &mut Vec<(Vec<isize>, Vec<isize>)>, axes: usize) -> usize {
+    let initial = get_axes(moons, axes);
     let moons_number = moons.len();
 
     let mut step = 0;
-    println!("After {} steps", step);
+    println!("after {} steps, axes {}", step, axes);
     print_moons(&moons);
     loop {
         for (moon1_id, moon2_id) in (0..moons_number).tuple_combinations() {
@@ -105,30 +96,33 @@ fn find_cycle_in_axis(
             let mut moon2 = moons[moon2_id].clone();
 
             // gravity phase
-            for i in 0..3 {
-                let delta = sign(moon1.0[i] - moon2.0[i]);
-                moon1.1[i] += -delta;
-                moon2.1[i] += delta;
-            }
+            let delta = sign(moon1.0[axes] - moon2.0[axes]);
+            moon1.1[axes] += -delta;
+            moon2.1[axes] += delta;
+
             moons[moon1_id] = moon1;
             moons[moon2_id] = moon2;
         }
         // velocity phase
         for moon in moons.iter_mut() {
-            for i in 0..3 {
-                moon.0[i] += moon.1[i];
-            }
+            moon.0[axes] += moon.1[axes];
         }
         step += 1;
 
-        if step % 10 == 0 {
-            println!("After {} steps", step);
+        if get_axes(&moons, axes) == initial {
+            println!("Found {} steps", step);
             print_moons(&moons);
-        }
-        if (moons[cycle_moon].0[axes], moons[cycle_moon].1[axes]) == initial {
+            println!("-----");
             return step;
         }
     }
+}
+
+fn get_axes(moons: &Vec<(Vec<isize>, Vec<isize>)>, axes: usize) -> Vec<(isize, isize)> {
+    moons
+        .iter()
+        .map(|v| (v.0[axes], v.1[axes]))
+        .collect::<Vec<(isize, isize)>>()
 }
 
 fn print_moons(moons: &Vec<(Vec<isize>, Vec<isize>)>) {
