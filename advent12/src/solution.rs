@@ -78,9 +78,7 @@ pub fn part2(input: &str) -> usize {
     for axes in 0..3 {
         axes_cycles.push(find_cycle_in_axis(&mut moons.clone(), axes));
     }
-    println!("{:?}", axes_cycles);
     axes_cycles[2].lcm(&axes_cycles[0].lcm(&axes_cycles[1]))
-    //moon_cycles.push(lcm(lcm(axes_cycles[0], axes_cycles[1]), axes_cycles[2]))
 }
 
 fn find_cycle_in_axis(moons: &mut Vec<(Vec<isize>, Vec<isize>)>, axes: usize) -> usize {
@@ -88,8 +86,6 @@ fn find_cycle_in_axis(moons: &mut Vec<(Vec<isize>, Vec<isize>)>, axes: usize) ->
     let moons_number = moons.len();
 
     let mut step = 0;
-    println!("after {} steps, axes {}", step, axes);
-    print_moons(&moons);
     loop {
         for (moon1_id, moon2_id) in (0..moons_number).tuple_combinations() {
             let mut moon1 = moons[moon1_id].clone();
@@ -110,9 +106,6 @@ fn find_cycle_in_axis(moons: &mut Vec<(Vec<isize>, Vec<isize>)>, axes: usize) ->
         step += 1;
 
         if get_axes(&moons, axes) == initial {
-            println!("Found {} steps", step);
-            print_moons(&moons);
-            println!("-----");
             return step;
         }
     }
@@ -125,16 +118,16 @@ fn get_axes(moons: &Vec<(Vec<isize>, Vec<isize>)>, axes: usize) -> Vec<(isize, i
         .collect::<Vec<(isize, isize)>>()
 }
 
-fn print_moons(moons: &Vec<(Vec<isize>, Vec<isize>)>) {
-    for (i, moon) in moons.iter().enumerate() {
-        println!(
-            "moon {}{:?} {}{:?} {}{:?}",
-            i,
-            (moon.0[0], moon.1[0]),
-            i,
-            (moon.0[1], moon.1[1]),
-            i,
-            (moon.0[2], moon.1[2])
-        );
-    }
-}
+// fn print_moons(moons: &Vec<(Vec<isize>, Vec<isize>)>) {
+//     for (i, moon) in moons.iter().enumerate() {
+//         println!(
+//             "moon {}{:?} {}{:?} {}{:?}",
+//             i,
+//             (moon.0[0], moon.1[0]),
+//             i,
+//             (moon.0[1], moon.1[1]),
+//             i,
+//             (moon.0[2], moon.1[2])
+//         );
+//     }
+// }
